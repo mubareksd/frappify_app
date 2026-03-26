@@ -1,7 +1,4 @@
-import AppSidebar from "@/components/layout/app-sidebar";
-import Footer from "@/components/layout/footer";
-import Header from "@/components/layout/header";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import ProtectedAppShell from "@/components/layout/protected-app-shell";
 import { env } from "@/lib/env";
 import { getCurrentSession } from "@/lib/session";
 
@@ -75,11 +72,17 @@ export default async function ProtectedLayout({
   })();
 
   return (
-    <SidebarProvider>
-      <AppSidebar sidebarItems={sidebarItems} />
-      <Header />
-      <main>{children}</main>
-      <Footer />
-    </SidebarProvider>
+    <ProtectedAppShell
+      sidebarItems={sidebarItems}
+      user={{
+        name: session?.user?.name,
+        email: session?.user?.email,
+        username: session?.user?.username,
+        siteId: session?.user?.siteId,
+        image: session?.user?.image,
+      }}
+    >
+      {children}
+    </ProtectedAppShell>
   );
 }

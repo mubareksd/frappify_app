@@ -1,4 +1,5 @@
 import { authOptions } from '@/lib/auth-options';
+import { env } from '@/lib/env';
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 
@@ -12,7 +13,7 @@ export default async function ProtectedLayout({
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect(authOptions?.pages?.signIn || '/login');
+    redirect(authOptions?.pages?.signIn || `${env.PUBLIC_APP_URL}/login`);
   }
 
   return (
