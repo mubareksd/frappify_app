@@ -1,29 +1,30 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { env } from '@/lib/env';
-import { signIn } from 'next-auth/react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { env } from "@/lib/env";
+import { signIn } from "next-auth/react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || `${env.NEXT_PUBLIC_APP_URL}/`;
+  const callbackUrl =
+    searchParams.get("callbackUrl") || `${env.NEXT_PUBLIC_APP_URL}/`;
 
-    const [siteId, setSiteId] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [siteId, setSiteId] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,8 +34,8 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-        const result = await signIn('credentials', {
-          siteId,
+      const result = await signIn("credentials", {
+        siteId,
         username,
         password,
         redirect: false,
@@ -42,14 +43,14 @@ export default function LoginPage() {
       });
 
       if (!result || result.error) {
-        setError(result?.error || 'Invalid username or password');
+        setError(result?.error || "Invalid username or password");
         return;
       }
 
       router.push(result.url || callbackUrl);
       router.refresh();
     } catch {
-      setError('Unable to sign in right now. Please try again.');
+      setError("Unable to sign in right now. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -65,10 +66,8 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-                  <form className="space-y-4" onSubmit={handleSubmit}>
-                      
-
-                      <div className="space-y-2">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
               <Label htmlFor="site_id">Site ID</Label>
               <Input
                 id="site_id"
@@ -79,8 +78,7 @@ export default function LoginPage() {
                 autoComplete="site_id"
                 required
               />
-                      </div>
-                      
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
@@ -111,7 +109,7 @@ export default function LoginPage() {
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
+              {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
           </form>
         </CardContent>

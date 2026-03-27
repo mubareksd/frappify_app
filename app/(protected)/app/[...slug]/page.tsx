@@ -1,4 +1,5 @@
 import { RoutePlaceholder } from "@/components/frappe/route-placeholder";
+import { env } from "@/lib/env";
 import { resolveFrappeRouteWithApi } from "@/lib/frappe-route";
 import { getCurrentSession } from "@/lib/session";
 import { notFound, redirect } from "next/navigation";
@@ -22,7 +23,7 @@ export default async function Page({
     !siteId ||
     session.error === "AccessTokenExpired"
   ) {
-    redirect("/login");
+    redirect(`${env.PUBLIC_APP_URL}/login`);
   }
 
   const resolvedRoute = await resolveFrappeRouteWithApi(

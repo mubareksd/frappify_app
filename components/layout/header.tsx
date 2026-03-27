@@ -23,6 +23,7 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useMemo, useState } from "react";
+import { env } from "@/lib/env";
 
 interface HeaderProps {
     user?: {
@@ -63,7 +64,7 @@ export default function Header({
     };
 
     const handleLogout = async () => {
-        await signOut({ callbackUrl: "/login" });
+        await signOut({ callbackUrl: `${env.NEXT_PUBLIC_APP_URL}/login` });
     };
 
     return (

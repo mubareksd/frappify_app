@@ -16,7 +16,7 @@ export default async function HomePage() {
   const siteId = session?.user.siteId;
 
   if (!user || !accessToken || !siteId || session.error === "AccessTokenExpired") {
-    redirect("/login");
+    redirect(`${env.PUBLIC_APP_URL}/login`);
   }
 
   const apps: FrappeApp[] = await (async () => {

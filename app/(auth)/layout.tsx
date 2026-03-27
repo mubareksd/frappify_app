@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
+import { env } from '@/lib/env';
 
 export default async function AuthLayout({
   children,
@@ -9,7 +10,7 @@ export default async function AuthLayout({
   const user = await getCurrentUser();
 
   if (user) {
-    redirect('/');
+    redirect(`${env.PUBLIC_APP_URL}/`);
   }
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
