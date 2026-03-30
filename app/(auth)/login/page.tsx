@@ -15,6 +15,18 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+async function fetchPublicIpAddress() {
+  try {
+    const response = await fetch("https://api.ipify.org?format=json");
+    if (!response.ok) return "";
+
+    const data = (await response.json()) as { ip?: string };
+    return data.ip?.trim() || "";
+  } catch {
+    return "";
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,7 +35,7 @@ export default function LoginPage() {
 
   const [siteId, setSiteId] = useState("");
   const [ipAddress, setIpAddress] = useState("");
-  const [macAddress, setMacAddress] = useState("");
+  const [macAddress] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -33,16 +45,9 @@ export default function LoginPage() {
     let isMounted = true;
 
     async function detectIpAddress() {
-      try {
-        const response = await fetch("https://api.ipify.org?format=json");
-        if (!response.ok) return;
-
-        const data = (await response.json()) as { ip?: string };
-        if (isMounted && data.ip) {
-          setIpAddress(data.ip);
-        }
-      } catch {
-        // Leave IP empty when detection fails.
+      const currentIp = await fetchPublicIpAddress();
+      if (isMounted && currentIp) {
+        setIpAddress(currentIp);
       }
     }
 
@@ -59,9 +64,16 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
+      // Refresh public IP at submit time so late VPN changes are captured.
+      const currentIpAddress = await fetchPublicIpAddress();
+
+      if (currentIpAddress) {
+        setIpAddress(currentIpAddress);
+      }
+
       const result = await signIn("credentials", {
         siteId,
-        ipAddress: ipAddress.trim(),
+        ipAddress: (currentIpAddress || ipAddress).trim(),
         macAddress: macAddress.trim(),
         username,
         password,
