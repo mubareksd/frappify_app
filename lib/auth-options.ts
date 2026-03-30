@@ -7,6 +7,8 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
+        ipAddress: { label: 'IP Address', type: 'text' },
+        macAddress: { label: 'MAC Address', type: 'text' },
         siteId: { label: 'Site ID', type: 'text' },
         username: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' }
@@ -16,6 +18,19 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Site ID, username, and password required');
         }
 
+        const forwardedHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'X-Frappe-Site': credentials.siteId,
+        };
+
+        if (credentials.ipAddress?.trim()) {
+          forwardedHeaders['X-Forwarded-For'] = credentials.ipAddress.trim();
+        }
+
+        if (credentials.macAddress?.trim()) {
+          forwardedHeaders['X-Forwarded-Mac'] = credentials.macAddress.trim();
+        }
+
         try {
           const res = await fetch(`${env.API_URL}/method/login`, {
             method: 'POST',
@@ -23,10 +38,7 @@ export const authOptions: NextAuthOptions = {
               usr: credentials.username,
               pwd: credentials.password,
             }),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Frappe-Site': credentials.siteId,
-            },
+            headers: forwardedHeaders,
           });
 
           if (!res.ok) {

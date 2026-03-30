@@ -12,9 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { env } from "@/lib/env";
 import { signIn } from "next-auth/react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,10 +22,36 @@ export default function LoginPage() {
     searchParams.get("callbackUrl") || `${env.NEXT_PUBLIC_APP_URL}/`;
 
   const [siteId, setSiteId] = useState("");
+  const [ipAddress, setIpAddress] = useState("");
+  const [macAddress, setMacAddress] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function detectIpAddress() {
+      try {
+        const response = await fetch("https://api.ipify.org?format=json");
+        if (!response.ok) return;
+
+        const data = (await response.json()) as { ip?: string };
+        if (isMounted && data.ip) {
+          setIpAddress(data.ip);
+        }
+      } catch {
+        // Leave IP empty when detection fails.
+      }
+    }
+
+    void detectIpAddress();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,6 +61,8 @@ export default function LoginPage() {
     try {
       const result = await signIn("credentials", {
         siteId,
+        ipAddress: ipAddress.trim(),
+        macAddress: macAddress.trim(),
         username,
         password,
         redirect: false,
