@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { env } from "@/lib/env";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
@@ -30,8 +29,7 @@ async function fetchPublicIpAddress() {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl =
-    searchParams.get("callbackUrl") || `${env.NEXT_PUBLIC_APP_URL}/`;
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   const [siteId, setSiteId] = useState("");
   const [ipAddress, setIpAddress] = useState("");

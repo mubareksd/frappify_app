@@ -62,8 +62,8 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: `${env.PUBLIC_APP_URL}/login`,
-    error: `${env.PUBLIC_APP_URL}/error`,
+    signIn: '/login',
+    error: '/error',
   },
   callbacks: {
     async jwt({ token, user }) {
