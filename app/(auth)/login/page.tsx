@@ -35,7 +35,6 @@ export default function LoginPage() {
 
   const [siteId, setSiteId] = useState("");
   const [ipAddress, setIpAddress] = useState("");
-  const [macAddress] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +73,6 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         siteId,
         ipAddress: (currentIpAddress || ipAddress).trim(),
-        macAddress: macAddress.trim(),
         username,
         password,
         redirect: false,

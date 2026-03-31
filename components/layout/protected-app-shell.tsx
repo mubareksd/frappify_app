@@ -52,7 +52,7 @@ export default function ProtectedAppShell({
   };
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <AppSidebar sidebarItems={sidebarItems} />
       <SidebarInset>
         <Header

@@ -57,7 +57,7 @@ export default function AppSidebar({ sidebarItems }: { sidebarItems: SidebarItem
   const isPathActive = (name: string) => pathname === hrefFor(name);
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

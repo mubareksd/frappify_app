@@ -8,7 +8,6 @@ export const authOptions: NextAuthOptions = {
       name: 'Credentials',
       credentials: {
         ipAddress: { label: 'IP Address', type: 'text' },
-        macAddress: { label: 'MAC Address', type: 'text' },
         siteId: { label: 'Site ID', type: 'text' },
         username: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' }
@@ -25,10 +24,6 @@ export const authOptions: NextAuthOptions = {
 
         if (credentials.ipAddress?.trim()) {
           forwardedHeaders['X-Forwarded-For'] = credentials.ipAddress.trim();
-        }
-
-        if (credentials.macAddress?.trim()) {
-          forwardedHeaders['X-Forwarded-Mac'] = credentials.macAddress.trim();
         }
 
         try {
