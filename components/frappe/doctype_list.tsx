@@ -7,16 +7,6 @@ import { env } from "@/lib/env";
 import { getCurrentSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 
-function toCapitalCase(input: string): string {
-  return input
-    .split('-')                // split by dash
-    .reverse()                 // reverse order
-    .map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    )
-    .join(' ');
-}
-
 type UserRow = {
     name: string;
     owner: string;
