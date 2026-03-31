@@ -50,7 +50,9 @@ export default async function DoctypeList({ title, value }: DoctypeListProps) {
 
     // 1. Fetch doctype metadata
     const metaRes = await fetch(
-        `${env.API_URL}/method/frappe.desk.form.load.getdoctype?doctype=${encodeURIComponent(value)}`,
+        `${env.API_URL}/method/frappe.desk.form.load.getdoctype?doctype=${encodeURIComponent(value.split('-')
+    .reverse()
+    .join(' '))}`,
         {
             method: "GET",
             cache: "no-store",
@@ -63,24 +65,19 @@ export default async function DoctypeList({ title, value }: DoctypeListProps) {
     );
     const metaJson = await metaRes.json();
     const meta = metaJson.docs?.[0] || null;
+    const doctypeName = meta?.name || value;
+    let doctypeFields = meta?.fields || [];
+    doctypeFields = doctypeFields.filter(f => f.in_list_view == 1);
 
     // 2. Fetch list data
     const fields = [
-        "`tabUser`.`name`",
-        "`tabUser`.`owner`",
-        "`tabUser`.`creation`",
-        "`tabUser`.`modified`",
-        "`tabUser`.`modified_by`",
-        "`tabUser`.`user_type`",
-        "`tabUser`.`full_name`",
-        "`tabUser`.`user_image`",
-        "`tabUser`.`enabled`"
+        ...doctypeFields.map((f: { fieldname: string }) => `\`tab${doctypeName}\`.\`${f.fieldname}\``),
     ];
     const params = new URLSearchParams();
     params.append("doctype", value);
     params.append("fields", JSON.stringify(fields));
     params.append("filters", JSON.stringify([]));
-    params.append("order_by", "`tabUser`.`modified` desc");
+    params.append("order_by", "`tab${doctypeName}`.`modified` desc");
     params.append("start", "0");
     params.append("page_length", "20");
     params.append("view", "List");
@@ -88,7 +85,7 @@ export default async function DoctypeList({ title, value }: DoctypeListProps) {
     params.append("with_comment_count", "1");
 
     const listRes = await fetch(
-        `${env.API_URL}/method/frappe.desk.reportview.get?doctype=${toCapitalCase(value)}&fields=${encodeURIComponent(JSON.stringify(fields))}&filters=${encodeURIComponent(JSON.stringify([]))}&order_by=${encodeURIComponent("`tabUser`.`modified` desc")}&start=0&page_length=20&view=List&group_by=&with_comment_count=1`,
+        `${env.API_URL}/method/frappe.desk.reportview.get?doctype=${doctypeName}&fields=${encodeURIComponent(JSON.stringify(fields))}&filters=${encodeURIComponent(JSON.stringify([]))}&order_by=${encodeURIComponent("`tab${doctypeName}`.`modified` desc")}&start=0&page_length=20&view=List&group_by=&with_comment_count=1`,
         {
             method: "POST",
             headers: {
@@ -120,21 +117,17 @@ export default async function DoctypeList({ title, value }: DoctypeListProps) {
             <table className="min-w-full border border-gray-200">
                 <thead>
                     <tr className="bg-gray-100">
-                        <th className="p-2 border">Name</th>
-                        <th className="p-2 border">Full Name</th>
-                        <th className="p-2 border">User Type</th>
-                        <th className="p-2 border">Enabled</th>
-                        <th className="p-2 border">Modified</th>
+                        {doctypeFields.map((field: { label: string }) => (
+                            <th key={field.label} className="p-2 border">{field.label}</th>
+                        ))}
                     </tr>
                 </thead>
                 <tbody>
                     {userRows.map((row) => (
                         <tr key={row.name} className="hover:bg-gray-50">
-                            <td className="p-2 border">{row.name}</td>
-                            <td className="p-2 border">{row.full_name}</td>
-                            <td className="p-2 border">{row.user_type}</td>
-                            <td className="p-2 border">{row.enabled ? "Yes" : "No"}</td>
-                            <td className="p-2 border">{row.modified}</td>
+                            {doctypeFields.map((field: { fieldname: string }) => (
+                                <td key={field.fieldname} className="p-2 border">{row[field.fieldname]}</td>
+                        ))}
                         </tr>
                     ))}
                 </tbody>
