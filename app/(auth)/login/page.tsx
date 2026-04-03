@@ -199,9 +199,12 @@ export default function LoginPage() {
 
       if (!result || result.error) {
         removeAccount(account.id);
-        setSwitchError(
-          `Session for ${account.username}@${account.siteId} has expired. Please sign in again.`,
-        );
+        // Redirect to login with prefilled siteId/username
+        const params = new URLSearchParams();
+        params.set("siteId", account.siteId);
+        params.set("username", account.username);
+        params.set("expired", "1");
+        router.push(`/login?${params.toString()}`);
         setSwitching(null);
         return;
       }
