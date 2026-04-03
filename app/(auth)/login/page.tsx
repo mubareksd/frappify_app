@@ -17,7 +17,7 @@ import {
 } from "@/hooks/use-account-store";
 import { getSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 async function fetchPublicIpAddress() {
   try {
@@ -136,20 +136,35 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
-  const [siteId, setSiteId] = useState("");
+  // Prefill from query params (e.g. redirected after token expiry).
+  const prefillSiteId = searchParams.get("siteId") || "";
+  const prefillUsername = searchParams.get("username") || "";
+  const isExpired = searchParams.get("expired") === "1";
+
+  const [siteId, setSiteId] = useState(prefillSiteId);
   const [ipAddress, setIpAddress] = useState("");
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(prefillUsername);
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    isExpired ? "Your session has expired. Please sign in again." : null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { accounts, saveAccount, removeAccount } = useAccountStore();
 
-  // Show the login form when user explicitly wants a new account.
-  const [showLoginForm, setShowLoginForm] = useState(false);
+  // Show the login form immediately when redirected with prefilled credentials.
+  const [showLoginForm, setShowLoginForm] = useState(!!prefillSiteId && !!prefillUsername);
 
   // Switching state for the session picker.
   const [switching, setSwitching] = useState<string | null>(null);
   const [switchError, setSwitchError] = useState<string | null>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus password when redirected with prefilled credentials.
+  useEffect(() => {
+    if (prefillSiteId && prefillUsername && showLoginForm) {
+      passwordRef.current?.focus();
+    }
+  }, [prefillSiteId, prefillUsername, showLoginForm]);
 
   useEffect(() => {
     let isMounted = true;
@@ -307,6 +322,7 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
+                ref={passwordRef}
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}

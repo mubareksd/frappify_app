@@ -15,8 +15,16 @@ export default async function HomePage() {
   const accessToken = session?.accessToken;
   const siteId = session?.user.siteId;
 
-  if (!user || !accessToken || !siteId || session.error === "AccessTokenExpired") {
+  if (!user || !accessToken || !siteId) {
     redirect(`${env.PUBLIC_APP_URL}/login`);
+  }
+
+  if (session.error === "AccessTokenExpired") {
+    const params = new URLSearchParams();
+    if (siteId) params.set("siteId", siteId);
+    if (user.username) params.set("username", user.username);
+    params.set("expired", "1");
+    redirect(`${env.PUBLIC_APP_URL}/login?${params.toString()}`);
   }
 
   const apps: FrappeApp[] = await (async () => {
