@@ -1,5 +1,6 @@
 import { ResolvedFrappeRoute } from "@/lib/frappe-route";
 import DoctypeList from "./doctype_list";
+import DoctypeForm from "./doctype_form";
 import Workspace from "./workspace";
 
 type RoutePlaceholderProps = {
@@ -18,6 +19,16 @@ function Label({ title, value }: { title: string; value: string }) {
 }
 
 export function RoutePlaceholder({ route }: RoutePlaceholderProps) {
+  if (route.type === "form") {
+    return (
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+        <div className="rounded-xl border bg-card p-4 sm:p-6">
+          <DoctypeForm title="Form" value={route.doctype} name={route.name} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="rounded-xl border bg-card p-6">
@@ -43,13 +54,6 @@ export function RoutePlaceholder({ route }: RoutePlaceholderProps) {
 
                   {route.type === "doctype-list" && (
                     <DoctypeList title="Doctype" value={route.doctype} />
-          )}
-
-          {route.type === "form" && (
-            <>
-              <Label title="Doctype" value={route.doctype} />
-              <Label title="Name" value={route.name} />
-            </>
           )}
         </div>
       </div>
