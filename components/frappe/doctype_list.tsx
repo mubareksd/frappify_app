@@ -30,8 +30,10 @@ export default async function DoctypeList({ title, value }: DoctypeListProps) {
 
     // --- Fetch doctype metadata ---
     let meta: any = null;
+
     let doctypeFields: any[] = [];
     let doctypeName = value;
+
     try {
         const metaRes = await fetch(
             `${env.API_URL}/method/frappe.desk.form.load.getdoctype?doctype=${encodeURIComponent(
@@ -50,7 +52,38 @@ export default async function DoctypeList({ title, value }: DoctypeListProps) {
         const metaJson = await metaRes.json();
         meta = metaJson.docs?.[0] || null;
         doctypeName = meta?.name || value;
-        doctypeFields = (meta?.fields || []).filter((f: any) => f.in_list_view == 1);
+
+        // Dynamically get listview fields from API (add_fields in listview_settings)
+        if (doctypeName === "User") {
+            // Fetch listview settings for User doctype
+            const listviewRes = await fetch(
+                `${env.API_URL}/method/frappe.desk.reportview.get_list_settings?doctype=${doctypeName}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "X-Frappe-Site": siteId,
+                        "Accept-Encoding": "identity",
+                    },
+                }
+            );
+            const listviewJson = await listviewRes.json();
+            const addFields: string[] = listviewJson.message?.add_fields || ["name"];
+            // Always include name
+            const uniqueFields = Array.from(new Set(["name", ...addFields]));
+            // Map to label using meta.fields
+            const metaFields = meta?.fields || [];
+            doctypeFields = uniqueFields.map((fieldname) => {
+                if (fieldname === "name") return { fieldname: "name", label: "ID" };
+                const metaField = metaFields.find((f: any) => f.fieldname === fieldname);
+                return {
+                    fieldname,
+                    label: metaField?.label || fieldname.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                };
+            });
+        } else {
+            doctypeFields = (meta?.fields || []).filter((f: any) => f.in_list_view == 1);
+        }
     } catch (err) {
         return <div className="text-red-500">Failed to load metadata.</div>;
     }
@@ -59,8 +92,16 @@ export default async function DoctypeList({ title, value }: DoctypeListProps) {
 
     // --- Fetch list data ---
     let userRows: UserRow[] = [];
+
+
     try {
-        const fields = doctypeFields.map((f: { fieldname: string }) => `\`tab${doctypeName}\`.\`${f.fieldname}\``);
+        // For User doctype, use dynamic fields from listview settings
+        let fields;
+        if (doctypeName === "User") {
+            fields = doctypeFields.map((f: { fieldname: string }) => `\`tabUser\`.\`${f.fieldname}\``);
+        } else {
+            fields = doctypeFields.map((f: { fieldname: string }) => `\`tab${doctypeName}\`.\`${f.fieldname}\``);
+        }
         const listRes = await fetch(
             `${env.API_URL}/method/frappe.desk.reportview.get?doctype=${doctypeName}` +
                 `&fields=${encodeURIComponent(JSON.stringify(fields))}` +
@@ -110,9 +151,19 @@ export default async function DoctypeList({ title, value }: DoctypeListProps) {
                     ) : (
                         userRows.map((row) => (
                             <tr key={row.name || JSON.stringify(row)} className="hover:bg-gray-50">
-                                {doctypeFields.map((field: { fieldname: string }) => (
-                                    <td key={field.fieldname} className="p-2 border">{row[field.fieldname]}</td>
-                                ))}
+                                {doctypeFields.map((field: { fieldname: string }) => {
+                                    // For User doctype, show "Active"/"Disabled" for enabled
+                                    if (doctypeName === "User" && field.fieldname === "enabled") {
+                                        return (
+                                            <td key={field.fieldname} className="p-2 border">
+                                                {row.enabled === 1 || row.enabled === "1" ? "Active" : "Disabled"}
+                                            </td>
+                                        );
+                                    }
+                                    return (
+                                        <td key={field.fieldname} className="p-2 border">{row[field.fieldname]}</td>
+                                    );
+                                })}
                             </tr>
                         ))
                     )}

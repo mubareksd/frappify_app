@@ -10,11 +10,50 @@ export const authOptions: NextAuthOptions = {
         ipAddress: { label: 'IP Address', type: 'text' },
         siteId: { label: 'Site ID', type: 'text' },
         username: { label: 'Username', type: 'text' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
+        // Fields used for account switching (no password required)
+        accessToken: { label: 'Access Token', type: 'text' },
+        accessTokenExpires: { label: 'Expires', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.siteId || !credentials?.username || !credentials?.password) {
-          throw new Error('Site ID, username, and password required');
+        if (!credentials?.siteId || !credentials?.username) {
+          throw new Error('Site ID and username are required');
+        }
+
+        // ── Account switch: validate an existing token ──────────────
+        if (credentials.accessToken && !credentials.password) {
+          try {
+            const res = await fetch(
+              `${env.API_URL}/method/frappe.auth.get_logged_user`,
+              {
+                method: 'GET',
+                headers: {
+                  Authorization: `Bearer ${credentials.accessToken}`,
+                  'X-Frappe-Site': credentials.siteId,
+                },
+              },
+            );
+
+            if (!res.ok) {
+              throw new Error('Stored token is no longer valid');
+            }
+
+            return {
+              id: `${credentials.siteId}:${credentials.username}`,
+              username: credentials.username,
+              accessToken: credentials.accessToken,
+              accessTokenExpires: Number(credentials.accessTokenExpires) || Date.now() + 3600_000,
+              siteId: credentials.siteId,
+            };
+          } catch (error) {
+            console.error('Account switch error:', error);
+            return null;
+          }
+        }
+
+        // ── Normal login: username + password ───────────────────────
+        if (!credentials.password) {
+          throw new Error('Password is required');
         }
 
         const forwardedHeaders: Record<string, string> = {

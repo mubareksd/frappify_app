@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn } from "next-auth/react";
+import { useAccountStore } from "@/hooks/use-account-store";
+import { getSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -37,6 +38,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { saveAccount } = useAccountStore();
 
   useEffect(() => {
     let isMounted = true;
@@ -80,6 +82,21 @@ export default function LoginPage() {
       if (!result || result.error) {
         setError(result?.error || "Invalid username or password");
         return;
+      }
+
+      // Persist the new account in the multi-account store.
+      const session = await getSession();
+      if (session?.accessToken && session.user) {
+        saveAccount({
+          id: `${session.user.siteId}:${session.user.username}`,
+          username: session.user.username ?? username,
+          siteId: session.user.siteId ?? siteId,
+          accessToken: session.accessToken,
+          accessTokenExpires: session.accessTokenExpires ?? 0,
+          name: session.user.name,
+          email: session.user.email,
+          image: session.user.image,
+        });
       }
 
       router.push(result.url || callbackUrl);
