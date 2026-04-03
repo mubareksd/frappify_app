@@ -440,6 +440,8 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
                 <Chart
                   name={item?.chart_name || block.data?.chart_name || "Chart"}
                   label={item?.label}
+                  accessToken={accessToken}
+                  siteId={siteId}
                 />
               </div>
             );

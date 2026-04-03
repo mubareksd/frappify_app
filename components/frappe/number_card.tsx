@@ -15,6 +15,7 @@ type NumberCardDoc = {
   function?: string;
   show_percentage_stats?: number;
   filters_json?: string;
+  dynamic_filters_json?: string;
 };
 
 type NumberCardProps = {
@@ -33,6 +34,97 @@ function formatNumberCardValue(input: unknown) {
     notation: Math.abs(input) >= 1000 ? "compact" : "standard",
     maximumFractionDigits: 2,
   }).format(input);
+}
+
+function parseJsonSafely<T>(input: string | undefined, fallback: T): T {
+  if (!input) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(input) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+async function getUserDefault(
+  key: string,
+  accessToken: string,
+  siteId: string,
+) {
+  try {
+    const response = await fetch(
+      `${env.API_URL}/method/frappe.defaults.get_user_default?key=${encodeURIComponent(key)}`,
+      {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "X-Frappe-Site": siteId,
+          "Accept-Encoding": "identity",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const json = await response.json();
+    return json?.message ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveDynamicValue(
+  input: unknown,
+  accessToken: string,
+  siteId: string,
+) {
+  if (typeof input !== "string") {
+    return input;
+  }
+
+  const userDefaultMatch = input.match(
+    /^frappe\.defaults\.get_user_default\((?:"|')([^"']+)(?:"|')\)$/,
+  );
+
+  if (userDefaultMatch) {
+    return getUserDefault(userDefaultMatch[1], accessToken, siteId);
+  }
+
+  return input;
+}
+
+async function resolveNumberCardFilters(
+  doc: NumberCardDoc,
+  accessToken: string,
+  siteId: string,
+) {
+  const baseFilters = parseJsonSafely<unknown[][]>(doc.filters_json, []);
+  const dynamicFilters = parseJsonSafely<unknown[][]>(
+    doc.dynamic_filters_json,
+    [],
+  );
+
+  const resolvedDynamicFilters = await Promise.all(
+    dynamicFilters.map(async (filter) => {
+      if (!Array.isArray(filter) || filter.length < 4) {
+        return filter;
+      }
+
+      const resolvedValue = await resolveDynamicValue(
+        filter[3],
+        accessToken,
+        siteId,
+      );
+      return filter.map((item, index) => (index === 3 ? resolvedValue : item));
+    }),
+  );
+
+  return [...baseFilters, ...resolvedDynamicFilters];
 }
 
 export default async function NumberCard({
@@ -75,9 +167,15 @@ export default async function NumberCard({
       : null;
 
     if (doc) {
+      const resolvedFilters = await resolveNumberCardFilters(
+        doc,
+        accessToken,
+        siteId,
+      );
+
       const body = new URLSearchParams({
         doc: JSON.stringify(doc),
-        filters: doc.filters_json || "[]",
+        filters: JSON.stringify(resolvedFilters),
       });
 
       const resultRes = await fetch(

@@ -5,20 +5,68 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { env } from "@/lib/env";
 
 type ChartProps = {
   name: string;
   label?: string;
+  accessToken?: string;
+  siteId?: string;
 };
 
-export default function Chart({ name, label }: ChartProps) {
+type DashboardChartDoc = {
+  chart_name?: string;
+  report_name?: string | null;
+  chart_type?: string | null;
+  type?: string | null;
+  document_type?: string | null;
+};
+
+export default async function Chart({
+  name,
+  label,
+  accessToken,
+  siteId,
+}: ChartProps) {
+  let doc: DashboardChartDoc | null = null;
+
+  if (accessToken && siteId) {
+    try {
+      const response = await fetch(
+        `${env.API_URL}/method/frappe.client.get?doctype=${encodeURIComponent("Dashboard Chart")}&name=${encodeURIComponent(name)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-Frappe-Site": siteId,
+            "Accept-Encoding": "identity",
+          },
+        },
+      );
+
+      if (response.ok) {
+        const json = await response.json();
+        doc = (json?.message || null) as DashboardChartDoc | null;
+      }
+    } catch {
+      doc = null;
+    }
+  }
+
   return (
     <Card className="h-full bg-linear-to-br from-card via-card to-muted/20">
       <CardHeader>
-        <CardTitle>{label || name}</CardTitle>
-        <CardDescription>
-          Chart rendering is not implemented yet
-        </CardDescription>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle>{label || doc?.chart_name || name}</CardTitle>
+            <CardDescription>
+              {doc?.report_name || doc?.document_type || "Chart"}
+            </CardDescription>
+          </div>
+          {doc?.type ? <Badge variant="outline">{doc.type}</Badge> : null}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -31,6 +79,9 @@ export default function Chart({ name, label }: ChartProps) {
               <div className="h-28 w-full rounded-sm bg-primary/20" />
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            {doc?.chart_type || "Dashboard chart"} preview placeholder
+          </p>
         </div>
       </CardContent>
     </Card>
