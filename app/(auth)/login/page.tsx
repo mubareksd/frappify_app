@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,7 +11,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAccountStore } from "@/hooks/use-account-store";
+import {
+  type StoredAccount,
+  useAccountStore,
+} from "@/hooks/use-account-store";
 import { getSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
@@ -27,6 +31,106 @@ async function fetchPublicIpAddress() {
   }
 }
 
+function getInitials(name: string) {
+  const words = name.split(" ").filter(Boolean);
+  if (words.length === 0) return "U";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[1][0]}`.toUpperCase();
+}
+
+// ── Session Picker ──────────────────────────────────────────────────
+function SessionPicker({
+  accounts,
+  onSelect,
+  onNewAccount,
+  switching,
+  error,
+  onRemove,
+}: {
+  accounts: StoredAccount[];
+  onSelect: (account: StoredAccount) => void;
+  onNewAccount: () => void;
+  switching: string | null;
+  error: string | null;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Choose an account</CardTitle>
+          <CardDescription>
+            Select a saved session to continue, or sign in with a different account.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {accounts.map((account) => {
+            const displayName =
+              account.name?.trim() ||
+              account.username.trim() ||
+              account.email?.trim() ||
+              "User";
+
+            return (
+              <button
+                key={account.id}
+                type="button"
+                disabled={switching !== null}
+                onClick={() => onSelect(account)}
+                className="flex w-full items-center gap-3 rounded-md border p-3 text-left transition-colors hover:bg-accent disabled:opacity-50"
+              >
+                <Avatar className="size-9">
+                  <AvatarImage
+                    src={account.image ?? undefined}
+                    alt={displayName}
+                  />
+                  <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{displayName}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {account.username} · {account.siteId}
+                  </p>
+                </div>
+                {switching === account.id ? (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    Switching…
+                  </span>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0"
+                    disabled={switching !== null}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove(account.id);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </button>
+            );
+          })}
+
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+          <Button
+            variant="outline"
+            className="w-full"
+            disabled={switching !== null}
+            onClick={onNewAccount}
+          >
+            Sign in with a different account
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ── Main Login Page ─────────────────────────────────────────────────
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,7 +142,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { saveAccount } = useAccountStore();
+  const { accounts, saveAccount, removeAccount } = useAccountStore();
+
+  // Show the login form when user explicitly wants a new account.
+  const [showLoginForm, setShowLoginForm] = useState(false);
+
+  // Switching state for the session picker.
+  const [switching, setSwitching] = useState<string | null>(null);
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -56,6 +167,36 @@ export default function LoginPage() {
       isMounted = false;
     };
   }, []);
+
+  async function handleSelectAccount(account: StoredAccount) {
+    setSwitchError(null);
+    setSwitching(account.id);
+
+    try {
+      const result = await signIn("credentials", {
+        siteId: account.siteId,
+        username: account.username,
+        accessToken: account.accessToken,
+        accessTokenExpires: String(account.accessTokenExpires),
+        redirect: false,
+        callbackUrl,
+      });
+
+      if (!result || result.error) {
+        removeAccount(account.id);
+        setSwitchError(
+          `Session for ${account.username}@${account.siteId} has expired. Please sign in again.`,
+        );
+        setSwitching(null);
+        return;
+      }
+
+      window.location.href = result.url || callbackUrl;
+    } catch {
+      setSwitchError("Failed to switch account. Please try again.");
+      setSwitching(null);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -106,6 +247,23 @@ export default function LoginPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  // If there are saved accounts and user hasn't asked for the login form, show the picker.
+  if (accounts.length > 0 && !showLoginForm) {
+    return (
+      <SessionPicker
+        accounts={accounts}
+        onSelect={handleSelectAccount}
+        onNewAccount={() => setShowLoginForm(true)}
+        switching={switching}
+        error={switchError}
+        onRemove={(id) => {
+          removeAccount(id);
+          setSwitchError(null);
+        }}
+      />
+    );
   }
 
   return (
@@ -163,6 +321,17 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
+
+            {accounts.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setShowLoginForm(false)}
+              >
+                Back to saved accounts
+              </Button>
+            )}
           </form>
         </CardContent>
       </Card>
