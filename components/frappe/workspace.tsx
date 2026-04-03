@@ -105,9 +105,24 @@ function decodeHtml(input: string) {
     .trim();
 }
 
-function getBlockStyle(col: number | undefined) {
+const COL_SPAN_CLASSES = [
+  "md:col-span-1",
+  "md:col-span-2",
+  "md:col-span-3",
+  "md:col-span-4",
+  "md:col-span-5",
+  "md:col-span-6",
+  "md:col-span-7",
+  "md:col-span-8",
+  "md:col-span-9",
+  "md:col-span-10",
+  "md:col-span-11",
+  "md:col-span-12",
+] as const;
+
+function getBlockClass(col: number | undefined) {
   const safeCol = Math.min(Math.max(col || 12, 1), 12);
-  return { gridColumn: `span ${safeCol} / span ${safeCol}` };
+  return `col-span-1 ${COL_SPAN_CLASSES[safeCol - 1]}`;
 }
 
 function buildAppHref(
@@ -143,14 +158,14 @@ function WorkspaceShortcutCard({ item }: { item: WorkspaceShortcutItem }) {
 
   return (
     <Card className="h-full transition-colors hover:bg-muted/20">
-      <CardHeader>
+      <CardHeader className="p-4">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-sm">{item.label}</CardTitle>
+          <CardTitle className="break-words text-sm">{item.label}</CardTitle>
           {item.color ? <Badge variant="outline">{item.color}</Badge> : null}
         </div>
         <CardDescription>{item.type || "Shortcut"}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 pb-4 pt-0">
         {item.format ? (
           <p className="text-xs text-muted-foreground">{item.format}</p>
         ) : null}
@@ -181,11 +196,11 @@ function WorkspaceShortcutCard({ item }: { item: WorkspaceShortcutItem }) {
 function WorkspaceLinksCard({ section }: { section: WorkspaceCardSection }) {
   return (
     <Card className="h-full">
-      <CardHeader>
-        <CardTitle>{section.label}</CardTitle>
+      <CardHeader className="p-4">
+        <CardTitle className="break-words">{section.label}</CardTitle>
         <CardDescription>{section.links?.length || 0} links</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 pb-4 pt-0">
         <div className="space-y-2">
           {(section.links || []).map((link) => {
             const href = buildAppHref(
@@ -249,11 +264,13 @@ function WorkspaceOnboardingCard({
 }) {
   return (
     <Card className="h-full bg-linear-to-br from-card via-card to-muted/20">
-      <CardHeader>
-        <CardTitle>{onboarding.title || onboarding.label}</CardTitle>
+      <CardHeader className="p-4">
+        <CardTitle className="break-words">
+          {onboarding.title || onboarding.label}
+        </CardTitle>
         <CardDescription>{onboarding.subtitle || "Onboarding"}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 pb-4 pt-0">
         <div className="space-y-2">
           {(onboarding.items || []).map((step) => (
             <div
@@ -368,13 +385,13 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-linear-to-r from-card via-card to-muted/20 p-5">
+      <div className="rounded-lg border bg-linear-to-r from-card via-card to-muted/20 p-4 sm:p-5">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">
           {title}
         </p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="break-words text-xl font-semibold tracking-tight sm:text-2xl">
               {workspace.title || workspace.label || workspace.name}
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -385,7 +402,7 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-12">
         {blocks.map((block) => {
           const col = block.data?.col || 12;
 
@@ -393,7 +410,7 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
             return (
               <div
                 key={block.id}
-                style={getBlockStyle(col)}
+                className={getBlockClass(col)}
                 aria-hidden="true"
               />
             );
@@ -401,8 +418,8 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
 
           if (block.type === "header") {
             return (
-              <div key={block.id} style={getBlockStyle(col)}>
-                <h2 className="text-lg font-semibold tracking-tight">
+              <div key={block.id} className={getBlockClass(col)}>
+                <h2 className="break-words text-base font-semibold tracking-tight sm:text-lg">
                   {decodeHtml(block.data?.text || "Section")}
                 </h2>
               </div>
@@ -415,7 +432,7 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
               : undefined;
 
             return (
-              <div key={block.id} style={getBlockStyle(col)}>
+              <div key={block.id} className={getBlockClass(col)}>
                 <NumberCard
                   name={
                     item?.number_card_name ||
@@ -436,7 +453,7 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
               : undefined;
 
             return (
-              <div key={block.id} style={getBlockStyle(col)}>
+              <div key={block.id} className={getBlockClass(col)}>
                 <Chart
                   name={item?.chart_name || block.data?.chart_name || "Chart"}
                   label={item?.label}
@@ -453,7 +470,7 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
               : undefined;
 
             return item ? (
-              <div key={block.id} style={getBlockStyle(col)}>
+              <div key={block.id} className={getBlockClass(col)}>
                 <WorkspaceShortcutCard item={item} />
               </div>
             ) : null;
@@ -465,7 +482,7 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
               : undefined;
 
             return item ? (
-              <div key={block.id} style={getBlockStyle(col)}>
+              <div key={block.id} className={getBlockClass(col)}>
                 <WorkspaceLinksCard section={item} />
               </div>
             ) : null;
@@ -477,14 +494,14 @@ export default async function Workspace({ title, value }: WorkspaceProps) {
               : undefined;
 
             return item ? (
-              <div key={block.id} style={getBlockStyle(col)}>
+              <div key={block.id} className={getBlockClass(col)}>
                 <WorkspaceOnboardingCard onboarding={item} />
               </div>
             ) : null;
           }
 
           return (
-            <div key={block.id} style={getBlockStyle(col)}>
+            <div key={block.id} className={getBlockClass(col)}>
               <Card>
                 <CardHeader>
                   <CardTitle>{block.type}</CardTitle>

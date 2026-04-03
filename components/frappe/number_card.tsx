@@ -211,11 +211,13 @@ export default async function NumberCard({
 
   return (
     <Card className="h-full bg-linear-to-br from-card via-card to-muted/20">
-      <CardHeader>
+      <CardHeader className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle>{doc?.label || label || name}</CardTitle>
-            <CardDescription>
+            <CardTitle className="break-words text-base sm:text-lg">
+              {doc?.label || label || name}
+            </CardTitle>
+            <CardDescription className="break-words">
               {doc?.document_type || "Document"}
             </CardDescription>
           </div>
@@ -224,8 +226,8 @@ export default async function NumberCard({
           ) : null}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="text-3xl font-semibold tracking-tight text-foreground">
+      <CardContent className="px-4 pb-4 pt-0">
+        <div className="break-words text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           {formatNumberCardValue(result)}
         </div>
       </CardContent>

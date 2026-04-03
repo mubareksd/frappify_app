@@ -23,10 +23,10 @@ type DashboardChartLink = {
 
 function chartWidthClass(width: string | undefined) {
   if (width === "Half") {
-    return "md:col-span-6";
+    return "col-span-1 md:col-span-6";
   }
 
-  return "md:col-span-12";
+  return "col-span-1 md:col-span-12";
 }
 
 export default async function Dashboard({
@@ -111,13 +111,13 @@ export default async function Dashboard({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-linear-to-r from-card via-card to-muted/20 p-5">
+      <div className="rounded-lg border bg-linear-to-r from-card via-card to-muted/20 p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               {title}
             </p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+            <h1 className="mt-2 break-words text-xl font-semibold tracking-tight sm:text-2xl">
               {value}
             </h1>
           </div>
@@ -128,12 +128,12 @@ export default async function Dashboard({
       {cards.length > 0 ? (
         <section className="space-y-3">
           <div>
-            <h2 className="text-lg font-semibold">Overview</h2>
+            <h2 className="text-base font-semibold sm:text-lg">Overview</h2>
             <p className="text-sm text-muted-foreground">
               Key metrics for {value}
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {cards.map((card) => (
               <NumberCard
                 key={card.card}
@@ -149,12 +149,12 @@ export default async function Dashboard({
       {charts.length > 0 ? (
         <section className="space-y-3">
           <div>
-            <h2 className="text-lg font-semibold">Charts</h2>
+            <h2 className="text-base font-semibold sm:text-lg">Charts</h2>
             <p className="text-sm text-muted-foreground">
               Visual summaries for {value}
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-12">
             {charts.map((chart) => (
               <div key={chart.chart} className={chartWidthClass(chart.width)}>
                 <Chart

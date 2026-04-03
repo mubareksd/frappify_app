@@ -57,21 +57,23 @@ export default async function Chart({
 
   return (
     <Card className="h-full bg-linear-to-br from-card via-card to-muted/20">
-      <CardHeader>
+      <CardHeader className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle>{label || doc?.chart_name || name}</CardTitle>
-            <CardDescription>
+            <CardTitle className="break-words text-base sm:text-lg">
+              {label || doc?.chart_name || name}
+            </CardTitle>
+            <CardDescription className="break-words">
               {doc?.report_name || doc?.document_type || "Chart"}
             </CardDescription>
           </div>
           {doc?.type ? <Badge variant="outline">{doc.type}</Badge> : null}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 pb-4 pt-0">
         <div className="space-y-3">
-          <div className="h-48 rounded-md border bg-muted/30 p-4">
-            <div className="flex h-full items-end gap-3">
+          <div className="h-40 rounded-md border bg-muted/30 p-3 sm:h-48 sm:p-4">
+            <div className="flex h-full items-end gap-2 sm:gap-3">
               <div className="h-20 w-full rounded-sm bg-primary/20" />
               <div className="h-32 w-full rounded-sm bg-primary/30" />
               <div className="h-24 w-full rounded-sm bg-primary/20" />
