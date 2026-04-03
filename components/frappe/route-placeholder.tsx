@@ -5,6 +5,8 @@ import Workspace from "./workspace";
 
 type RoutePlaceholderProps = {
   route: Exclude<ResolvedFrappeRoute, { type: "unknown" }>;
+  currentPage: number;
+  pageSize: number;
 };
 
 function Label({ title, value }: { title: string; value: string }) {
@@ -18,44 +20,33 @@ function Label({ title, value }: { title: string; value: string }) {
   );
 }
 
-export function RoutePlaceholder({ route }: RoutePlaceholderProps) {
-  if (route.type === "form") {
-    return (
-      <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
-        <div className="rounded-xl border bg-card p-4 sm:p-6">
-          <DoctypeForm title="Form" value={route.doctype} name={route.name} />
-        </div>
-      </div>
-    );
-  }
-
+export function RoutePlaceholder({
+  route,
+  currentPage,
+  pageSize,
+}: RoutePlaceholderProps) {
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="rounded-xl border bg-card p-6">
-        <h1 className="text-xl font-semibold text-foreground">
-          Frappe Route Resolver
-        </h1>
+    <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="rounded-xl border bg-card p-4 sm:p-6">
+        {route.type === "workspace" && (
+          <Workspace title="Page" value={route.workspace} />
+        )}
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          Minimal route rendering is enabled. Replace this with real UI.
-        </p>
+        {route.type === "page" && <Label title="Page" value={route.page} />}
 
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Label title="Type" value={route.type} />
-          <Label title="Slug" value={`/${route.slug.join("/")}`} />
+        {route.type === "doctype-list" && (
+          <DoctypeList
+            title="Doctype"
+            value={route.doctype}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            listPath={`/app/${route.slug.join("/")}`}
+          />
+        )}
 
-                  {route.type === "workspace" && (
-                      <Workspace title="Workspace" value={route.workspace} />
-          )}
-
-          {route.type === "page" && (
-            <Label title="Page" value={route.page} />
-          )}
-
-                  {route.type === "doctype-list" && (
-                    <DoctypeList title="Doctype" value={route.doctype} />
-          )}
-        </div>
+        {route.type === "form" && (
+          <DoctypeForm title="Form" value={route.doctype} name={route.name} />
+        )}
       </div>
     </div>
   );

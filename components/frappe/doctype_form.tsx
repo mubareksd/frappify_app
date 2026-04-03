@@ -26,6 +26,12 @@ type FrappeField = {
     default?: string;
 };
 
+type LinkOption = {
+    value: string;
+    label?: string;
+    description?: string;
+};
+
 type FrappeDoctype = {
     doctype: string;
     name: string;
@@ -142,6 +148,7 @@ export default async function DoctypeForm({
 
     let doctypeMeta: FrappeDoctype | null = null;
     let docValues: Record<string, unknown> = {};
+    let linkOptionsByDoctype: Record<string, LinkOption[]> = {};
 
     try {
         const doctypeRes = await fetch(
@@ -195,6 +202,75 @@ export default async function DoctypeForm({
     }
 
     const fields = Array.isArray(doctypeMeta.fields) ? doctypeMeta.fields : [];
+
+    const linkDoctypes = Array.from(
+        new Set(
+            fields
+                .filter((field) => field.fieldtype === "Link" && Boolean(field.options))
+                .map((field) => field.options as string)
+        )
+    );
+
+    if (linkDoctypes.length > 0) {
+        const results = await Promise.all(
+            linkDoctypes.map(async (linkDoctype) => {
+                try {
+                    const body = new URLSearchParams({
+                        doctype: linkDoctype,
+                        ignore_user_permissions: "0",
+                        reference_doctype: value,
+                        page_length: "10",
+                        txt: "",
+                    });
+
+                    const response = await fetch(
+                        `${env.API_URL}/method/frappe.desk.search.search_link`,
+                        {
+                            method: "POST",
+                            cache: "no-store",
+                            headers: {
+                                Authorization: `Bearer ${accessToken}`,
+                                "X-Frappe-Site": siteId,
+                                "Accept-Encoding": "identity",
+                                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                            },
+                            body: body.toString(),
+                        }
+                    );
+
+                    if (!response.ok) {
+                        return [linkDoctype, []] as const;
+                    }
+
+                    const json = await response.json();
+                    const message = Array.isArray(json?.message) ? json.message : [];
+                    const options: LinkOption[] = message
+                        .map((item: unknown) => {
+                            const row = item as Partial<LinkOption>;
+                            if (!row.value) {
+                                return null;
+                            }
+
+                            return {
+                                value: String(row.value),
+                                label: row.label ? String(row.label) : undefined,
+                                description: row.description
+                                    ? String(row.description)
+                                    : undefined,
+                            };
+                        })
+                        .filter((item: LinkOption | null): item is LinkOption => Boolean(item));
+
+                    return [linkDoctype, options] as const;
+                } catch {
+                    return [linkDoctype, []] as const;
+                }
+            })
+        );
+
+        linkOptionsByDoctype = Object.fromEntries(results);
+    }
+
     const tabs = buildFormLayout(fields);
 
     return (
@@ -227,6 +303,11 @@ export default async function DoctypeForm({
                                                     field.fieldname
                                                         ? docValues[field.fieldname] ?? field.default ?? ""
                                                         : ""
+                                                }
+                                                linkOptions={
+                                                    field.fieldtype === "Link" && field.options
+                                                        ? linkOptionsByDoctype[field.options] || []
+                                                        : []
                                                 }
                                             />
                                         ))}
