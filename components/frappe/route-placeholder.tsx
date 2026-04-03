@@ -2,6 +2,7 @@ import { ResolvedFrappeRoute } from "@/lib/frappe-route";
 import DoctypeList from "./doctype_list";
 import DoctypeForm from "./doctype_form";
 import Workspace from "./workspace";
+import Dashboard from "./dashboard";
 
 type RoutePlaceholderProps = {
   route: Exclude<ResolvedFrappeRoute, { type: "unknown" }>;
@@ -31,6 +32,8 @@ export function RoutePlaceholder({
         {route.type === "workspace" && (
           <Workspace title="Page" value={route.workspace} />
         )}
+
+        {route.type === "dashboard" && <Dashboard title="Page" value={route.dashboard} />}
 
         {route.type === "page" && <Label title="Page" value={route.page} />}
 

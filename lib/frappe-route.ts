@@ -5,6 +5,11 @@ export type ResolvedFrappeRoute =
       type: "workspace";
       workspace: string;
       slug: string[];
+  }
+  | {
+      type: "dashboard";
+      dashboard: string;
+      slug: string[];
     }
   | {
       type: "page";
@@ -49,6 +54,16 @@ function isPageRoute(segment: string) {
 export function resolveFrappeRoute(slug: string[]): ResolvedFrappeRoute {
   if (slug.length === 0 || !slug[0]) {
     return { type: "unknown", slug };
+  }
+
+  if (slug[0] === "dashboard-view" && slug[1]) {
+    const dashboard = slug[1];
+
+    return {
+      type: "dashboard",
+      dashboard,
+      slug,
+    };
   }
 
   if (slug.length === 1) {
@@ -115,6 +130,14 @@ export async function resolveFrappeRouteWithApi(
 ): Promise<ResolvedFrappeRoute> {
   if (slug.length === 0 || !slug[0]) {
     return { type: "unknown", slug };
+  }
+
+  if (slug[0] === "dashboard-view" && slug[1]) {
+    return {
+      type: "dashboard",
+      dashboard: slug[1],
+      slug,
+    };
   }
 
   const base = `${env.API_URL}/resource`;
