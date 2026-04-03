@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAccountStore } from "@/hooks/use-account-store";
-import { signOut } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useState } from "react";
@@ -47,7 +47,7 @@ export default function Header({
     const { resolvedTheme, setTheme } = useTheme();
     const [isSessionDefaultsOpen, setIsSessionDefaultsOpen] = useState(false);
     const [isAccountSwitcherOpen, setIsAccountSwitcherOpen] = useState(false);
-    const { accounts, saveAccount } = useAccountStore();
+    const { accounts, saveAccount, removeAccount } = useAccountStore();
 
     const currentAccountId = user?.siteId && user?.username
         ? `${user.siteId}:${user.username}`
@@ -100,34 +100,33 @@ export default function Header({
     const handleLogout = async () => {
         // Remove the current account from the store.
         if (currentAccountId) {
-            const { removeAccount, getSnapshot } = await import("@/hooks/use-account-store").then(
-                (m) => ({ removeAccount: () => {}, getSnapshot: () => m.useAccountStore }),
-            ).catch(() => ({ removeAccount: () => {}, getSnapshot: () => null }));
+            removeAccount(currentAccountId);
+        }
 
-            // Use the store directly to remove + check remaining accounts.
-            const remaining = accounts.filter((a) => a.id !== currentAccountId);
-            // Persist the removal.
-            removeAccountFromStore(currentAccountId);
+        // Check if there are remaining accounts to switch to.
+        // We read `accounts` after removal via the hook, but since
+        // removeAccount writes synchronously we can filter here.
+        const remaining = accounts.filter((a) => a.id !== currentAccountId);
 
-            if (remaining.length > 0) {
-                const next = remaining[0];
-                // Sign out the current session, then sign into the next account.
-                await signOut({ redirect: false });
-                const result = await signIn("credentials", {
-                    siteId: next.siteId,
-                    username: next.username,
-                    accessToken: next.accessToken,
-                    accessTokenExpires: String(next.accessTokenExpires),
-                    redirect: false,
-                });
+        if (remaining.length > 0) {
+            const next = remaining[0];
+            await signOut({ redirect: false });
 
-                if (result && !result.error) {
-                    window.location.href = result.url || "/";
-                    return;
-                }
-                // Token was stale — fall through to normal logout.
-                removeAccountFromStore(next.id);
+            const result = await signIn("credentials", {
+                siteId: next.siteId,
+                username: next.username,
+                accessToken: next.accessToken,
+                accessTokenExpires: String(next.accessTokenExpires),
+                redirect: false,
+            });
+
+            if (result && !result.error) {
+                window.location.href = result.url || "/";
+                return;
             }
+
+            // Token was stale — remove it and fall through to login page.
+            removeAccount(next.id);
         }
 
         await signOut({ callbackUrl: `${env.NEXT_PUBLIC_APP_URL}/login` });
