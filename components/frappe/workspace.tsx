@@ -146,7 +146,7 @@ function buildAppHref(
     return `/app/query-report/${encodeURIComponent(linkTo)}`;
   }
 
-  return `/app/${encodeURIComponent(linkTo)}/view/list`;
+  return `/app/${encodeURIComponent(linkTo)}`;
 }
 
 function WorkspaceShortcutCard({ item }: { item: WorkspaceShortcutItem }) {
