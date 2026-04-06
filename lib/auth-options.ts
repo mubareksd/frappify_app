@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.siteId || !credentials?.username) {
-          throw new Error('Site ID and username are required');
+          throw new Error('MissingCredentials');
         }
 
         // ── Account switch: validate an existing token ──────────────
@@ -53,7 +53,7 @@ export const authOptions: NextAuthOptions = {
 
         // ── Normal login: username + password ───────────────────────
         if (!credentials.password) {
-          throw new Error('Password is required');
+          throw new Error('MissingPassword');
         }
 
         const forwardedHeaders: Record<string, string> = {
@@ -76,14 +76,33 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!res.ok) {
-            const error = await res.json().catch(() => null);
-            throw new Error(error?.error || error?.message || 'Authentication failed');
+            if (res.status === 401) {
+              throw new Error('InvalidCredentials');
+            }
+
+            if (res.status === 403) {
+              throw new Error('AccessDenied');
+            }
+
+            if (res.status === 423) {
+              throw new Error('AccountLocked');
+            }
+
+            if (res.status === 429) {
+              throw new Error('TooManyRequests');
+            }
+
+            if (res.status >= 500) {
+              throw new Error('AuthServiceUnavailable');
+            }
+
+            throw new Error('CredentialsSignin');
           }
 
           const data = await res.json();
 
           if (!data?.access_token || typeof data?.expires_in !== 'number') {
-            throw new Error('Invalid authentication response');
+            throw new Error('InvalidAuthResponse');
           }
 
           return {
@@ -95,7 +114,12 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (error) {
           console.error('Authorization error:', error);
-          return null;
+
+          if (error instanceof Error) {
+            throw error;
+          }
+
+          throw new Error('AuthServiceUnavailable');
         }
       },
     }),

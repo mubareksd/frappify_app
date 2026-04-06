@@ -15,6 +15,7 @@ import {
   type StoredAccount,
   useAccountStore,
 } from "@/hooks/use-account-store";
+import { getAuthErrorMessage } from "@/lib/auth-error";
 import { getSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
@@ -140,13 +141,18 @@ export default function LoginPage() {
   const prefillSiteId = searchParams.get("siteId") || "";
   const prefillUsername = searchParams.get("username") || "";
   const isExpired = searchParams.get("expired") === "1";
+  const signInErrorCode = searchParams.get("error");
 
   const [siteId, setSiteId] = useState(prefillSiteId);
   const [ipAddress, setIpAddress] = useState("");
   const [username, setUsername] = useState(prefillUsername);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(
-    isExpired ? "Your session has expired. Please sign in again." : null,
+    isExpired
+      ? getAuthErrorMessage("SessionExpired")
+      : signInErrorCode
+        ? getAuthErrorMessage(signInErrorCode)
+        : null,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { accounts, saveAccount, removeAccount } = useAccountStore();
@@ -198,20 +204,27 @@ export default function LoginPage() {
       });
 
       if (!result || result.error) {
-        removeAccount(account.id);
-        // Redirect to login with prefilled siteId/username
-        const params = new URLSearchParams();
-        params.set("siteId", account.siteId);
-        params.set("username", account.username);
-        params.set("expired", "1");
-        router.push(`/login?${params.toString()}`);
+        const isExpiredSession = result?.error === "CredentialsSignin";
+
+        if (isExpiredSession) {
+          removeAccount(account.id);
+          // Redirect to login with prefilled siteId/username
+          const params = new URLSearchParams();
+          params.set("siteId", account.siteId);
+          params.set("username", account.username);
+          params.set("expired", "1");
+          router.push(`/login?${params.toString()}`);
+        } else {
+          setSwitchError(getAuthErrorMessage(result?.error));
+        }
+
         setSwitching(null);
         return;
       }
 
       window.location.href = result.url || callbackUrl;
     } catch {
-      setSwitchError("Failed to switch account. Please try again.");
+      setSwitchError(getAuthErrorMessage("AuthServiceUnavailable"));
       setSwitching(null);
     }
   }
@@ -239,7 +252,7 @@ export default function LoginPage() {
       });
 
       if (!result || result.error) {
-        setError(result?.error || "Invalid username or password");
+        setError(getAuthErrorMessage(result?.error));
         return;
       }
 
@@ -261,7 +274,7 @@ export default function LoginPage() {
       router.push(result.url || callbackUrl);
       router.refresh();
     } catch {
-      setError("Unable to sign in right now. Please try again.");
+      setError(getAuthErrorMessage("AuthServiceUnavailable"));
     } finally {
       setIsSubmitting(false);
     }

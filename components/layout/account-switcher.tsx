@@ -15,6 +15,7 @@ import {
   type StoredAccount,
   useAccountStore,
 } from "@/hooks/use-account-store";
+import { getAuthErrorMessage } from "@/lib/auth-error";
 import { signIn } from "next-auth/react";
 import { FormEvent, useState } from "react";
 
@@ -74,11 +75,16 @@ export default function AccountSwitcher({
       });
 
       if (!result || result.error) {
-        // Token expired — remove the stale account
-        removeAccount(account.id);
-        setError(
-          `Session for ${account.username}@${account.siteId} has expired. Please add the account again.`,
-        );
+        if (result?.error === "CredentialsSignin") {
+          // Token expired — remove the stale account
+          removeAccount(account.id);
+          setError(
+            `Session for ${account.username}@${account.siteId} has expired. Please add the account again.`,
+          );
+        } else {
+          setError(getAuthErrorMessage(result?.error));
+        }
+
         setSwitching(null);
         return;
       }
@@ -86,7 +92,7 @@ export default function AccountSwitcher({
       // Success – hard reload to pick up the new session everywhere
       window.location.href = result.url || "/";
     } catch {
-      setError("Failed to switch account. Please try again.");
+      setError(getAuthErrorMessage("AuthServiceUnavailable"));
       setSwitching(null);
     }
   }
@@ -108,7 +114,7 @@ export default function AccountSwitcher({
       });
 
       if (!result || result.error) {
-        setError(result?.error || "Invalid credentials");
+        setError(getAuthErrorMessage(result?.error));
         setIsSubmitting(false);
         return;
       }
@@ -135,7 +141,7 @@ export default function AccountSwitcher({
       // Hard reload to pick up the new session
       window.location.href = result.url || "/";
     } catch {
-      setError("Unable to sign in right now. Please try again.");
+      setError(getAuthErrorMessage("AuthServiceUnavailable"));
       setIsSubmitting(false);
     }
   }
