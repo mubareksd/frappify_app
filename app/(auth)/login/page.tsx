@@ -234,9 +234,16 @@ export default function LoginPage() {
     setError(null);
     setIsSubmitting(true);
 
-    const normalizedSiteId = siteId.trim().toUpperCase();
-    const normalizedUsername = username.trim();
-    const normalizedPassword = password;
+    // Read directly from form fields to handle browser/password-manager autofill
+    // cases where React state can lag behind visible input values.
+    const formData = new FormData(event.currentTarget);
+    const submittedSiteId = String(formData.get("site_id") ?? siteId);
+    const submittedUsername = String(formData.get("username") ?? username);
+    const submittedPassword = String(formData.get("password") ?? password);
+
+    const normalizedSiteId = submittedSiteId.trim().toUpperCase();
+    const normalizedUsername = submittedUsername.trim();
+    const normalizedPassword = submittedPassword;
 
     setSiteId(normalizedSiteId);
     setUsername(normalizedUsername);
@@ -319,6 +326,7 @@ export default function LoginPage() {
               <Label htmlFor="site_id">Site ID</Label>
               <Input
                 id="site_id"
+                name="site_id"
                 type="text"
                 value={siteId}
                 onChange={(event) => setSiteId(event.target.value)}
@@ -332,6 +340,7 @@ export default function LoginPage() {
               <Label htmlFor="username">Username</Label>
               <Input
                 id="username"
+                name="username"
                 type="text"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
@@ -345,6 +354,7 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
+                name="password"
                 ref={passwordRef}
                 type="password"
                 value={password}
