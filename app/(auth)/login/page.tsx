@@ -135,7 +135,8 @@ function SessionPicker({
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = rawCallbackUrl?.startsWith("/") ? rawCallbackUrl : "/";
 
   // Prefill from query params (e.g. redirected after token expiry).
   const prefillSiteId = searchParams.get("siteId") || "";

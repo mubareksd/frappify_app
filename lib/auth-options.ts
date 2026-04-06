@@ -3,6 +3,17 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { env } from '@/lib/env';
 
 export const authOptions: NextAuthOptions = {
+    logger: {
+    error(code, ...message) {
+      console.error('[nextauth][error]', code, ...message);
+    },
+    warn(code, ...message) {
+      console.warn('[nextauth][warn]', code, ...message);
+    },
+    debug(code, ...message) {
+      console.info('[nextauth][debug]', code, ...message);
+    },
+  },
     providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -21,7 +32,13 @@ export const authOptions: NextAuthOptions = {
         const password = credentials?.password ?? '';
         const accessToken = credentials?.accessToken?.trim() ?? '';
         const accessTokenExpiresRaw = credentials?.accessTokenExpires;
-        const ipAddress = credentials?.ipAddress?.trim() ?? '';
+
+        console.info('[auth][authorize] called', {
+          siteId,
+          username,
+          hasPassword: password.length > 0,
+          hasAccessToken: accessToken.length > 0,
+        });
 
         if (!siteId || !username) {
           throw new Error('MissingCredentials');
@@ -68,11 +85,12 @@ export const authOptions: NextAuthOptions = {
           'X-Frappe-Site': siteId,
         };
 
-        if (ipAddress) {
-          forwardedHeaders['X-Forwarded-For'] = ipAddress;
-        }
-
         try {
+          console.info('[auth][authorize] sending upstream login request', {
+            siteId,
+            username,
+          });
+
           const res = await fetch(`${env.API_URL}/method/login`, {
             method: 'POST',
             body: JSON.stringify({
@@ -83,6 +101,14 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!res.ok) {
+            const upstreamBody = await res.text().catch(() => '');
+            console.error('[auth][authorize] upstream login failed', {
+              status: res.status,
+              siteId,
+              username,
+              body: upstreamBody,
+            });
+
             if (res.status === 401) {
               throw new Error('InvalidCredentials');
             }
