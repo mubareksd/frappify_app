@@ -16,20 +16,27 @@ export const authOptions: NextAuthOptions = {
         accessTokenExpires: { label: 'Expires', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.siteId || !credentials?.username) {
+        const siteId = credentials?.siteId?.trim().toUpperCase() ?? '';
+        const username = credentials?.username?.trim() ?? '';
+        const password = credentials?.password ?? '';
+        const accessToken = credentials?.accessToken?.trim() ?? '';
+        const accessTokenExpiresRaw = credentials?.accessTokenExpires;
+        const ipAddress = credentials?.ipAddress?.trim() ?? '';
+
+        if (!siteId || !username) {
           throw new Error('MissingCredentials');
         }
 
         // ── Account switch: validate an existing token ──────────────
-        if (credentials.accessToken && !credentials.password) {
+        if (accessToken && !password) {
           try {
             const res = await fetch(
               `${env.API_URL}/method/frappe.auth.get_logged_user`,
               {
                 method: 'GET',
                 headers: {
-                  Authorization: `Bearer ${credentials.accessToken}`,
-                  'X-Frappe-Site': credentials.siteId,
+                  Authorization: `Bearer ${accessToken}`,
+                  'X-Frappe-Site': siteId,
                 },
               },
             );
@@ -39,11 +46,11 @@ export const authOptions: NextAuthOptions = {
             }
 
             return {
-              id: `${credentials.siteId}:${credentials.username}`,
-              username: credentials.username,
-              accessToken: credentials.accessToken,
-              accessTokenExpires: Number(credentials.accessTokenExpires) || Date.now() + 3600_000,
-              siteId: credentials.siteId,
+              id: `${siteId}:${username}`,
+              username,
+              accessToken,
+              accessTokenExpires: Number(accessTokenExpiresRaw) || Date.now() + 3600_000,
+              siteId,
             };
           } catch (error) {
             console.error('Account switch error:', error);
@@ -52,25 +59,25 @@ export const authOptions: NextAuthOptions = {
         }
 
         // ── Normal login: username + password ───────────────────────
-        if (!credentials.password) {
+        if (!password) {
           throw new Error('MissingPassword');
         }
 
         const forwardedHeaders: Record<string, string> = {
           'Content-Type': 'application/json',
-          'X-Frappe-Site': credentials.siteId,
+          'X-Frappe-Site': siteId,
         };
 
-        if (credentials.ipAddress?.trim()) {
-          forwardedHeaders['X-Forwarded-For'] = credentials.ipAddress.trim();
+        if (ipAddress) {
+          forwardedHeaders['X-Forwarded-For'] = ipAddress;
         }
 
         try {
           const res = await fetch(`${env.API_URL}/method/login`, {
             method: 'POST',
             body: JSON.stringify({
-              usr: credentials.username,
-              pwd: credentials.password,
+              usr: username,
+              pwd: password,
             }),
             headers: forwardedHeaders,
           });
@@ -106,11 +113,11 @@ export const authOptions: NextAuthOptions = {
           }
 
           return {
-            id: `${credentials.siteId}:${credentials.username}`,
-            username: credentials.username,
+            id: `${siteId}:${username}`,
+            username,
             accessToken: data.access_token,
             accessTokenExpires: Date.now() + Number(data.expires_in ?? 0) * 1000,
-            siteId: credentials.siteId,
+            siteId,
           };
         } catch (error) {
           console.error('Authorization error:', error);

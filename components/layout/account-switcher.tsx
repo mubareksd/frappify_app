@@ -65,10 +65,13 @@ export default function AccountSwitcher({
     setError(null);
     setSwitching(account.id);
 
+    const normalizedSiteId = account.siteId.trim().toUpperCase();
+    const normalizedUsername = account.username.trim();
+
     try {
       const result = await signIn("credentials", {
-        siteId: account.siteId,
-        username: account.username,
+        siteId: normalizedSiteId,
+        username: normalizedUsername,
         accessToken: account.accessToken,
         accessTokenExpires: String(account.accessTokenExpires),
         redirect: false,
@@ -102,14 +105,21 @@ export default function AccountSwitcher({
     setError(null);
     setIsSubmitting(true);
 
+    const normalizedSiteId = siteId.trim().toUpperCase();
+    const normalizedUsername = username.trim();
+    const normalizedPassword = password;
+
+    setSiteId(normalizedSiteId);
+    setUsername(normalizedUsername);
+
     try {
       const ipAddress = await fetchPublicIpAddress();
 
       const result = await signIn("credentials", {
-        siteId,
+        siteId: normalizedSiteId,
         ipAddress,
-        username,
-        password,
+        username: normalizedUsername,
+        password: normalizedPassword,
         redirect: false,
       });
 
@@ -128,8 +138,8 @@ export default function AccountSwitcher({
       if (session?.accessToken && session.user) {
         saveAccount({
           id: `${session.user.siteId}:${session.user.username}`,
-          username: session.user.username ?? username,
-          siteId: session.user.siteId ?? siteId,
+          username: session.user.username ?? normalizedUsername,
+          siteId: session.user.siteId ?? normalizedSiteId,
           accessToken: session.accessToken,
           accessTokenExpires: session.accessTokenExpires ?? 0,
           name: session.user.name,

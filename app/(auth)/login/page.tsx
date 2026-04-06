@@ -234,6 +234,13 @@ export default function LoginPage() {
     setError(null);
     setIsSubmitting(true);
 
+    const normalizedSiteId = siteId.trim().toUpperCase();
+    const normalizedUsername = username.trim();
+    const normalizedPassword = password;
+
+    setSiteId(normalizedSiteId);
+    setUsername(normalizedUsername);
+
     try {
       // Refresh public IP at submit time so late VPN changes are captured.
       const currentIpAddress = await fetchPublicIpAddress();
@@ -243,10 +250,10 @@ export default function LoginPage() {
       }
 
       const result = await signIn("credentials", {
-        siteId,
+        siteId: normalizedSiteId,
         ipAddress: (currentIpAddress || ipAddress).trim(),
-        username,
-        password,
+        username: normalizedUsername,
+        password: normalizedPassword,
         redirect: false,
         callbackUrl,
       });
@@ -261,8 +268,8 @@ export default function LoginPage() {
       if (session?.accessToken && session.user) {
         saveAccount({
           id: `${session.user.siteId}:${session.user.username}`,
-          username: session.user.username ?? username,
-          siteId: session.user.siteId ?? siteId,
+          username: session.user.username ?? normalizedUsername,
+          siteId: session.user.siteId ?? normalizedSiteId,
           accessToken: session.accessToken,
           accessTokenExpires: session.accessTokenExpires ?? 0,
           name: session.user.name,
