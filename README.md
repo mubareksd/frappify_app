@@ -48,7 +48,7 @@ PUBLIC_APP_URL=http://app.frappify.localhost
 pnpm dev
 ```
 
-The app will be available at `http://app.frappify.localhost` (via [portless](https://github.com/nicholasgasior/portless)). If you are not using portless, run `next dev` directly and access the app at `http://localhost:3000`.
+The app will be available at `http://app.frappify.localhost` (via [portless](https://github.com/vercel-labs/portless)). If you are not using portless, run `next dev` directly and access the app at `http://localhost:3000`.
 
 ## Building for Production
 
