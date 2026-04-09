@@ -6,7 +6,7 @@ The main Frappify dashboard application — a Next.js PWA that provides the auth
 
 - Node.js 20+
 - pnpm
-- A running instance of the [Frappify API](../api/README.md)
+- A running instance of the [Frappify API](https://github.com/mubareksd/frappify_api/blob/main/README.md)
 
 ## Setup
 
