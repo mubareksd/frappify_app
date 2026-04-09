@@ -345,7 +345,7 @@ export default function LoginPage() {
                 type="text"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
-                placeholder="mubareksd"
+                placeholder="john"
                 autoComplete="username"
                 required
               />
