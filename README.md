@@ -1,6 +1,6 @@
 # Frappify App
 
-The main Frappify dashboard application — a Next.js PWA that provides the authenticated UI for interacting with Frappe/ERPNext instances through the Frappify API.
+The main Frappify dashboard application a Next.js PWA that provides the authenticated UI for interacting with Frappe/ERPNext instances through the Frappify API.
 
 ## Requirements
 
